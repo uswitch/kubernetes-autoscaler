@@ -4,24 +4,39 @@ kind: ServiceAccount
 metadata:
   name: vpa-recommender
   namespace: kube-system
----
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
+  creationTimestamp: null
+  labels:
+    app: vpa-recommender
   name: vpa-recommender
   namespace: kube-system
 spec:
+  progressDeadlineSeconds: 2147483647
   replicas: 1
+  revisionHistoryLimit: 2147483647
+  selector:
+    matchLabels:
+      app: vpa-recommender
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
   template:
     metadata:
+      creationTimestamp: null
       labels:
         app: vpa-recommender
     spec:
-      serviceAccountName: vpa-recommender
       containers:
-      - name: recommender
-        image: k8s.gcr.io/vpa-recommender:0.4.0
+      - image: k8s.gcr.io/vpa-recommender:0.4.0
         imagePullPolicy: Always
+        name: recommender
+        ports:
+        - containerPort: 8080
+          protocol: TCP
         resources:
           limits:
             cpu: 200m
@@ -29,5 +44,13 @@ spec:
           requests:
             cpu: 50m
             memory: 500Mi
-        ports:
-        - containerPort: 8080
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: vpa-recommender
+      serviceAccountName: vpa-recommender
+      terminationGracePeriodSeconds: 30
+status: {}
